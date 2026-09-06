@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Dynamic on-demand stack with auto-configured Apache web hosting.'
+
+Parameters:
+  AppName:
+    Type: String
+    Description: 'The name of the website application.'
+  KeyName:
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: 'Existing AWS KeyPair for SSH access.'
+
+Resources:
+  # Custom Security Group allowing web HTTP and administrative SSH traffic
+  AppSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: !Sub 'Security Group for ${AppName}'
+      SecurityGroupIngress:
+        # Open SSH Port 22
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        # Open Standard Web HTTP Port 80
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  # EC2 Web Server Instance running the latest Amazon Linux 2023
+  AppEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: t3.micro
+      KeyName: !Ref KeyName
+      ImageId: 'ami-0182f373e66f89c85' # Standard AL2023 AMI in us-east-1
+      SecurityGroupIds:
+        - !Ref AppSecurityGroup
+      # Bootstrap script: Runs automatically on the virtual machine's first boot
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          dnf install httpd -y
+          systemctl start httpd
+          systemctl enable httpd
+          # Change directory ownership so the SSH 'ec2-user' can deploy directly to Apache's folder
+          chown -R ec2-user:ec2-user /var/www/html
+      Tags:
+        - Key: Name
+          Value: !Ref AppName
+
+Outputs:
+  EC2PublicIP:
+    Description: 'The public IP of your newly created server'
+    Value: !GetAtt AppEC2Instance.PublicIp
