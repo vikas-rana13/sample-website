@@ -36,18 +36,22 @@ pipeline {
             steps {
                 echo "=== Fetching Public IP for Stack: ${params.APP_NAME}-stack ==="
                 script {
-                    // Extract the EC2 instance's dynamic public IP
+                    // Cleaner, robust query using double quotes to prevent string interpolation issues
                     def ec2Ip = sh(
-                        script: "aws cloudformation describe-stacks --stack-name \"${params.APP_NAME}-stack\" --query \"Stacks.Outputs[?OutputKey=='EC2PublicIP'].OutputValue\" --output text --region ${env.AWS_REGION}",
+                        script: "aws cloudformation describe-stacks --stack-name \"${params.APP_NAME}-stack\" --query \"Stacks[0].Outputs[?OutputKey=='EC2PublicIP'].OutputValue\" --output text --region ${env.AWS_REGION}",
                         returnStdout: true
                     ).trim()
                     
                     echo "Target EC2 Public IP: ${ec2Ip}"
                     
+                    if (ec2Ip == "None" || ec2Ip == "") {
+                        error "Deployment aborted: Could not retrieve a valid Public IP from CloudFormation output."
+                    }
+                    
                     echo "=== Copying index.html to EC2 Server ==="
-                    // Securely wraps the SCP command using your saved 'ec2-ssh-key' credentials
+                    // Uses the native credentials step with no extra plugin overhead
                     withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY')]) {
-                        sh "scp -o StrictHostKeyChecking=no -i \${SSH_KEY} index.html ec2-user@${ec2Ip}:/var/www/html/index.html"
+                        sh "scp -o StrictHostKeyChecking=no -i ${SSH_KEY} index.html ec2-user@${ec2Ip}:/var/www/html/index.html"
                     }
                 }
                 echo "=== Deployment Completed Successfully! ==="
