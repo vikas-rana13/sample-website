@@ -9,6 +9,8 @@ pipeline {
 
     environment {
         AWS_REGION = 'ap-southeast-2'
+        // Dynamically injects Apple Silicon and Intel macOS brew paths into Jenkins' PATH
+        PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
     }
 
     stages {
