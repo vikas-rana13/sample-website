@@ -8,6 +8,10 @@ Parameters:
   KeyName:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Description: 'Existing AWS KeyPair for SSH access.'
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>' # Tells CloudFormation this is an SSM Parameter for an AMI ID
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64' # The public AWS path to the latest Amazon Linux 2023 image
+    Description: Automatically fetches the latest Amazon Linux 2023 AMI ID from AWS Systems Manager # Parameter explanation
 
 Resources:
   # Custom Security Group allowing web HTTP and administrative SSH traffic
@@ -33,7 +37,7 @@ Resources:
     Properties:
       InstanceType: t3.micro
       KeyName: !Ref KeyName
-      ImageId: 'ami-0182f373e66f89c85' # Standard AL2023 AMI in us-east-1
+      ImageId: !Ref LatestAmiId
       SecurityGroupIds:
         - !Ref AppSecurityGroup
       # Bootstrap script: Runs automatically on the virtual machine's first boot
