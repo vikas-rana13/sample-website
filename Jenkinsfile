@@ -4,7 +4,7 @@ pipeline {
     // 1. Interactive UI parameters (Build/Test removed)
     parameters {
         booleanParam(name: 'DEPLOY', defaultValue: false, description: 'Provision AWS stack and deploy HTML website?')
-        stringParam(name: 'APP_NAME', defaultValue: 'simple-html-site', description: 'Unique name for your website and AWS stack')
+        string(name: 'APP_NAME', defaultValue: 'simple-html-site', description: 'Unique name for your website and AWS stack')
     }
 
     environment {
