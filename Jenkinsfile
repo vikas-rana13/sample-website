@@ -46,8 +46,8 @@ pipeline {
                     
                     echo "=== Copying index.html to EC2 Server ==="
                     // Securely wraps the SCP command using your saved 'ec2-ssh-key' credentials
-                    sshagent(credentials: ['ec2-ssh-key']) {
-                        sh "scp -o StrictHostKeyChecking=no index.html ec2-user@${ec2Ip}:/var/www/html/index.html"
+                    withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                        sh "scp -o StrictHostKeyChecking=no -i \${SSH_KEY} index.html ec2-user@${ec2Ip}:/var/www/html/index.html"
                     }
                 }
                 echo "=== Deployment Completed Successfully! ==="
